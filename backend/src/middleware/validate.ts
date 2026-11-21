@@ -12,10 +12,20 @@ export function validate(schema: {
         req.body = await schema.body.parseAsync(req.body);
       }
       if (schema.query) {
-        req.query = (await schema.query.parseAsync(req.query)) as any;
+        const parsedQuery = await schema.query.parseAsync(req.query);
+        // Mutate req.query in place to support Express 5 getter
+        for (const key of Object.keys(req.query)) {
+          delete (req.query as any)[key];
+        }
+        Object.assign(req.query, parsedQuery);
       }
       if (schema.params) {
-        req.params = (await schema.params.parseAsync(req.params)) as any;
+        const parsedParams = await schema.params.parseAsync(req.params);
+        // Mutate req.params in place to support Express 5 getter
+        for (const key of Object.keys(req.params)) {
+          delete (req.params as any)[key];
+        }
+        Object.assign(req.params, parsedParams);
       }
       next();
     } catch (error) {

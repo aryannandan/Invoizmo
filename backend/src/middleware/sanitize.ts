@@ -1,38 +1,38 @@
 import type { Request, Response, NextFunction } from 'express';
 
 /**
- * Express 5 compatible NoSQL sanitization middleware.
- * Strips keys beginning with '$' or containing '.' recursively.
+ * Express 5 compatible in-place NoSQL sanitization middleware.
+ * Removes any keys beginning with '$' or containing '.' in-place
+ * to respect Express 5's read-only getter for `req.query`.
  */
-function clean(obj: any): any {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
+function cleanInPlace(obj: any): void {
+  if (!obj || typeof obj !== 'object') return;
 
   if (Array.isArray(obj)) {
-    return obj.map(clean);
+    for (const item of obj) {
+      cleanInPlace(item);
+    }
+    return;
   }
 
-  const cleaned: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    // Drop keys that start with '$' or contain '.'
+  for (const key of Object.keys(obj)) {
     if (key.startsWith('$') || key.includes('.')) {
-      continue;
+      delete obj[key];
+    } else {
+      cleanInPlace(obj[key]);
     }
-    cleaned[key] = clean(value);
   }
-  return cleaned;
 }
 
 export function mongoSanitizeMiddleware(req: Request, _res: Response, next: NextFunction): void {
   if (req.body && typeof req.body === 'object') {
-    req.body = clean(req.body);
+    cleanInPlace(req.body);
   }
   if (req.query && typeof req.query === 'object') {
-    req.query = clean(req.query);
+    cleanInPlace(req.query);
   }
   if (req.params && typeof req.params === 'object') {
-    req.params = clean(req.params);
+    cleanInPlace(req.params);
   }
   next();
 }
