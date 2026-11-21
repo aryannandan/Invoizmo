@@ -1,0 +1,13 @@
+# Sensitive paths to exclude from AI indexing context
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.pem
+*.key
+id_rsa
+id_ed25519

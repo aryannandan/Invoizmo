@@ -1,0 +1,378 @@
+{
+  "info": {
+    "name": "Invoizmo API v1",
+    "_postman_id": "invoizmo-api-collection-v1",
+    "description": "Comprehensive Postman test collection for Invoizmo SaaS API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const tokenExpiry = pm.environment.get('tokenExpiry');",
+          "const now = Date.now();",
+          "if (tokenExpiry && now >= parseInt(tokenExpiry)) {",
+          "    pm.sendRequest({",
+          "        url: pm.environment.get('baseUrl') + '/api/v1/auth/refresh',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' }",
+          "    }, function (err, res) {",
+          "        if (!err && res.code === 200) {",
+          "            const token = res.json().data.accessToken;",
+          "            pm.environment.set('accessToken', token);",
+          "            pm.environment.set('tokenExpiry', Date.now() + 14 * 60 * 1000);",
+          "        }",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Checks",
+      "item": [
+        {
+          "name": "GET /health (Liveness)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Healthy status', () => pm.expect(pm.response.json().status).to.eql('healthy'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /ready (Readiness)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/ready"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Database ready', () => pm.expect(pm.response.json().database).to.eql('connected'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "POST /auth/signup",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/signup",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Asha Rao\",\n  \"email\": \"asha@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Generic verify message', () => pm.expect(pm.response.json().data.message).to.include('Check your email'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns access token', () => pm.expect(json.data.accessToken).to.exist);",
+                  "pm.environment.set('accessToken', json.data.accessToken);",
+                  "pm.environment.set('tokenExpiry', Date.now() + 14 * 60 * 1000);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/refresh",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/refresh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('accessToken', json.data.accessToken);",
+                  "pm.environment.set('tokenExpiry', Date.now() + 14 * 60 * 1000);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Users & Settings",
+      "item": [
+        {
+          "name": "GET /users/me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/users/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No passwordHash exposed', () => pm.expect(pm.response.json().data.passwordHash).to.not.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /users/me (Update Business Details)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/users/me",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business\": {\n    \"name\": \"Asha Consulting Studio\",\n    \"taxId\": \"GSTIN29ABCDE1234F1Z5\"\n  },\n  \"defaults\": {\n    \"currency\": \"INR\",\n    \"paymentTermsDays\": 15\n  },\n  \"invoicePrefix\": \"INV-\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /users/me/export (GDPR)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/users/me/export",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Invoices",
+      "item": [
+        {
+          "name": "POST /invoices (Create Draft)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/invoices",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateId\": \"classic\",\n  \"currency\": \"INR\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.data.status).to.eql('draft');",
+                  "pm.expect(json.data.number).to.be.null;",
+                  "pm.environment.set('invoiceId', json.data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /invoices (Dashboard List)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/invoices?status=all&page=1&limit=20",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        },
+        {
+          "name": "PATCH /invoices/:id (Update Line Items & Calculate)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client\": {\n    \"name\": \"Acme Corp\",\n    \"email\": \"billing@acme.com\"\n  },\n  \"items\": [\n    {\n      \"description\": \"Web Architecture Consulting\",\n      \"quantity\": 10,\n      \"unit\": \"hrs\",\n      \"unitPriceMinor\": 500000\n    }\n  ],\n  \"discount\": {\n    \"type\": \"percent\",\n    \"value\": 10\n  },\n  \"taxPercent\": 18\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.data.subtotalMinor).to.eql(5000000);",
+                  "pm.expect(json.data.discountMinor).to.eql(500000);",
+                  "pm.expect(json.data.taxableMinor).to.eql(4500000);",
+                  "pm.expect(json.data.taxMinor).to.eql(810000);",
+                  "pm.expect(json.data.totalMinor).to.eql(5310000);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /invoices/:id/mark-sent (Assigns Number)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-sent",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.data.invoice.number).to.match(/^INV-\\d{4}$/);",
+                  "pm.expect(json.data.invoice.status).to.eql('sent');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /invoices/:id/mark-paid",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-paid",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        },
+        {
+          "name": "GET /invoices/:id/pdf (Download PDF)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/pdf?size=A4",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Content-Type is application/pdf', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /invoices/:id (Move to Trash)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/invoices/{{invoiceId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Trash",
+      "item": [
+        {
+          "name": "GET /trash",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/trash",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        },
+        {
+          "name": "POST /trash/:id/restore",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/trash/{{invoiceId}}/restore",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Templates & Contact",
+      "item": [
+        {
+          "name": "GET /templates",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/templates"
+          }
+        },
+        {
+          "name": "POST /contact",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/contact",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Raj Patel\",\n  \"email\": \"raj@example.com\",\n  \"subject\": \"General Inquiry\",\n  \"message\": \"I would like to inquire about multi-currency support on Invoizmo.\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
