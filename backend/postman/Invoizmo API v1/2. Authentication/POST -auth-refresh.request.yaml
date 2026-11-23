@@ -1,0 +1,12 @@
+$kind: http-request
+name: POST /auth/refresh
+url: "{{baseUrl}}/api/v1/auth/refresh"
+method: POST
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.environment.set('accessToken', json.data.accessToken);
+      pm.environment.set('tokenExpiry', Date.now() + 14 * 60 * 1000);
+order: 3000

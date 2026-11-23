@@ -1,0 +1,16 @@
+$kind: http-request
+name: POST /contact
+url: "{{baseUrl}}/api/v1/contact"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Raj Patel",
+      "email": "raj@example.com",
+      "subject": "General Inquiry",
+      "message": "I would like to inquire about multi-currency support on Invoizmo."
+    }
+order: 2000

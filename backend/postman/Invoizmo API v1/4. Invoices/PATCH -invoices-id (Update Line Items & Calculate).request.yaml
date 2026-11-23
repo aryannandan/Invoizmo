@@ -1,0 +1,40 @@
+$kind: http-request
+name: PATCH /invoices/:id (Update Line Items & Calculate)
+url: "{{baseUrl}}/api/v1/invoices/{{invoiceId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "client": {
+        "name": "Acme Corp",
+        "email": "billing@acme.com"
+      },
+      "items": [
+        {
+          "description": "Web Architecture Consulting",
+          "quantity": 10,
+          "unit": "hrs",
+          "unitPriceMinor": 500000
+        }
+      ],
+      "discount": {
+        "type": "percent",
+        "value": 10
+      },
+      "taxPercent": 18
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.expect(json.data.subtotalMinor).to.eql(5000000);
+      pm.expect(json.data.discountMinor).to.eql(500000);
+      pm.expect(json.data.taxableMinor).to.eql(4500000);
+      pm.expect(json.data.taxMinor).to.eql(810000);
+      pm.expect(json.data.totalMinor).to.eql(5310000);
+order: 3000

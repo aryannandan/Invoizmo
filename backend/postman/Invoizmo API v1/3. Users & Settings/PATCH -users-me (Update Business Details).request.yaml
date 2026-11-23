@@ -1,0 +1,22 @@
+$kind: http-request
+name: PATCH /users/me (Update Business Details)
+url: "{{baseUrl}}/api/v1/users/me"
+method: PATCH
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "business": {
+        "name": "Asha Consulting Studio",
+        "taxId": "GSTIN29ABCDE1234F1Z5"
+      },
+      "defaults": {
+        "currency": "INR",
+        "paymentTermsDays": 15
+      },
+      "invoicePrefix": "INV-"
+    }
+order: 2000

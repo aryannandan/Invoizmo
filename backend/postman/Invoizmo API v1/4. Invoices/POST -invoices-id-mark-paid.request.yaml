@@ -1,0 +1,7 @@
+$kind: http-request
+name: POST /invoices/:id/mark-paid
+url: "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-paid"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 5000

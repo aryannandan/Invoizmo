@@ -1,0 +1,7 @@
+$kind: http-request
+name: POST /trash/:id/restore
+url: "{{baseUrl}}/api/v1/trash/{{invoiceId}}/restore"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 2000

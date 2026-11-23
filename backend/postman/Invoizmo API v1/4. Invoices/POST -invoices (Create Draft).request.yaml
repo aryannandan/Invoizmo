@@ -1,0 +1,23 @@
+$kind: http-request
+name: POST /invoices (Create Draft)
+url: "{{baseUrl}}/api/v1/invoices"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "templateId": "classic",
+      "currency": "INR"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 201', () => pm.response.to.have.status(201));
+      const json = pm.response.json();
+      pm.expect(json.data.status).to.eql('draft');
+      pm.expect(json.data.number).to.be.null;
+      pm.environment.set('invoiceId', json.data._id);
+order: 1000

@@ -10,13 +10,41 @@ export class InvoiceService {
    * Generates next invoice number atomically.
    */
   private async getNextInvoiceNumber(userId: string, prefix: string, startSeq: number): Promise<string> {
-    const counter = await Counter.findOneAndUpdate(
-      { userId: new Types.ObjectId(userId), series: prefix },
+    const userObjectId = new Types.ObjectId(userId);
+
+    // 1. Try to increment existing counter
+    let counter = await Counter.findOneAndUpdate(
+      { userId: userObjectId, series: prefix },
       { $inc: { seq: 1 } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { new: true }
     );
 
-    const seq = Math.max(counter.seq, startSeq);
+    // 2. If no counter exists yet, atomically create with startSeq
+    if (!counter) {
+      try {
+        counter = await Counter.create({
+          userId: userObjectId,
+          series: prefix,
+          seq: Math.max(1, startSeq),
+        });
+      } catch {
+        // Race condition: another concurrent call created it first
+        counter = await Counter.findOneAndUpdate(
+          { userId: userObjectId, series: prefix },
+          { $inc: { seq: 1 } },
+          { new: true }
+        );
+      }
+    } else if (counter.seq < startSeq) {
+      // If user bumped startingNumber in settings higher than current sequence
+      counter = await Counter.findOneAndUpdate(
+        { userId: userObjectId, series: prefix },
+        { $set: { seq: startSeq } },
+        { new: true }
+      );
+    }
+
+    const seq = counter?.seq ?? Math.max(1, startSeq);
     return `${prefix}${String(seq).padStart(4, '0')}`;
   }
 

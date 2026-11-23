@@ -1,0 +1,7 @@
+$kind: http-request
+name: GET /users/me/export (GDPR)
+url: "{{baseUrl}}/api/v1/users/me/export"
+method: GET
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 3000

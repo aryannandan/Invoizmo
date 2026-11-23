@@ -1,0 +1,22 @@
+$kind: http-request
+name: POST /auth/login
+url: "{{baseUrl}}/api/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "asha@example.com",
+      "password": "SecurePass123!"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.test('Returns access token', () => pm.expect(json.data.accessToken).to.exist);
+      pm.environment.set('accessToken', json.data.accessToken);
+      pm.environment.set('tokenExpiry', Date.now() + 14 * 60 * 1000);
+order: 2000

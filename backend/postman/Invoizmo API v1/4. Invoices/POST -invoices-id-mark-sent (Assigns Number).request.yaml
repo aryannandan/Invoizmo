@@ -1,0 +1,14 @@
+$kind: http-request
+name: POST /invoices/:id/mark-sent (Assigns Number)
+url: "{{baseUrl}}/api/v1/invoices/{{invoiceId}}/mark-sent"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.expect(json.data.invoice.number).to.match(/^INV-\d{4}$/);
+      pm.expect(json.data.invoice.status).to.eql('sent');
+order: 4000

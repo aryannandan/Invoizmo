@@ -1,0 +1,7 @@
+$kind: http-request
+name: DELETE /invoices/:id (Move to Trash)
+url: "{{baseUrl}}/api/v1/invoices/{{invoiceId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 7000
