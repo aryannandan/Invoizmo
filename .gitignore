@@ -32,3 +32,8 @@ coverage/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Postman local runtime cache
+.postman/
+postman/
+backend/postman/Invoizmo API v1/
