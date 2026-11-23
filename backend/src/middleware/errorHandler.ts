@@ -44,6 +44,30 @@ export function errorHandler(
     return;
   }
 
+  // Handle Mongoose CastError (e.g. malformed ObjectId)
+  if (err.name === 'CastError') {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Resource not found',
+      },
+    });
+    return;
+  }
+
+  // Handle Mongoose ValidationError
+  if (err.name === 'ValidationError') {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: err.message,
+      },
+    });
+    return;
+  }
+
   // Handle MongoDB Duplicate Key Error (11000)
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue || {})[0] || 'field';

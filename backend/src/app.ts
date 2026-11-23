@@ -107,6 +107,7 @@ const globalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
   handler: (_req, _res, next) => {
     next(new AppError('Too many requests, please try again later.', 429, 'RATE_LIMIT_EXCEEDED'));
   },

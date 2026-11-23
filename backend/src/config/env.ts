@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
+if (process.env.npm_lifecycle_event === 'test') {
+  process.env.NODE_ENV = 'test';
+}
+
 dotenv.config();
 
 const envSchema = z.object({

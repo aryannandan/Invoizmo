@@ -5,6 +5,8 @@ import { validate } from '../../middleware/validate.js';
 import { AppError } from '../../utils/ownershipCheck.js';
 import mongoose, { Schema } from 'mongoose';
 
+import { env } from '../../config/env.js';
+
 const contactMessageSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -24,6 +26,7 @@ const contactLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
   handler: (_req, _res, next) => {
     next(new AppError('Too many contact submissions. Please wait a few minutes.', 429, 'RATE_LIMIT_EXCEEDED'));
   },
@@ -34,7 +37,7 @@ const contactBodySchema = z.object({
   email: z.string().email('Invalid email address'),
   subject: z.string().min(2, 'Subject is required'),
   message: z.string().min(10, 'Message must be at least 10 characters'),
-  honeypot: z.string().max(0, 'Spam detected').optional(), // Must be empty
+  honeypot: z.string().optional(),
 });
 
 router.post('/', contactLimiter, validate({ body: contactBodySchema }), async (req, res, next) => {

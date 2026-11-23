@@ -23,6 +23,8 @@ import {
   resetPassword,
 } from './auth.controller.js';
 
+import { env } from '../../config/env.js';
+
 const router = express.Router();
 
 // Strict Rate Limiting on Auth Endpoints (10 attempts per minute)
@@ -31,6 +33,7 @@ const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => env.NODE_ENV === 'test',
   handler: (_req, _res, next) => {
     next(new AppError('Too many attempts, please try again after 1 minute.', 429, 'RATE_LIMIT_EXCEEDED'));
   },

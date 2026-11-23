@@ -367,6 +367,10 @@ export class InvoiceService {
   async markSent(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
 
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
+
     if (invoice.status === 'paid') {
       throw new AppError(
         'Invoice is already marked as paid. Mark as unpaid before setting to sent.',
@@ -396,6 +400,10 @@ export class InvoiceService {
   async markPaid(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
 
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
+
     if (invoice.status !== 'sent') {
       throw new AppError(
         'Invoice must be marked as sent before marking as paid.',
@@ -416,6 +424,10 @@ export class InvoiceService {
    */
   async markUnpaid(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
+
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
 
     if (invoice.status !== 'paid') {
       throw new AppError(
@@ -438,6 +450,10 @@ export class InvoiceService {
   async markDraft(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
 
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
+
     if (invoice.status === 'paid') {
       throw new AppError(
         'Paid invoices cannot be reverted directly to draft. Mark as unpaid first.',
@@ -458,6 +474,10 @@ export class InvoiceService {
   async archive(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
 
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
+
     if (invoice.status === 'draft') {
       throw new AppError('Draft invoices cannot be archived.', 400, 'INVALID_REQUEST');
     }
@@ -473,6 +493,11 @@ export class InvoiceService {
    */
   async unarchive(userId: string, invoiceId: string): Promise<IInvoice> {
     const invoice = await assertOwnership(Invoice, invoiceId, userId);
+
+    if (invoice.deletedAt) {
+      throw new AppError('Cannot perform this action on a trashed invoice. Restore it first.', 400, 'INVALID_REQUEST');
+    }
+
     invoice.archivedAt = null;
     await invoice.save();
 
